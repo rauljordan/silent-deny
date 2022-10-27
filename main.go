@@ -70,10 +70,12 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if re.MatchString(m.Content) {
 			if err := s.ChannelMessageDelete(m.ChannelID, m.ID); err != nil {
 				log.WithError(err).Error("Failed to delete denied message.")
+				continue
 			}
 			ts, err := discordgo.SnowflakeTimestamp(m.Author.ID)
 			if err != nil {
 				log.WithError(err).Error("Could not determine user's timestamp")
+				continue
 			}
 			age := time.Since(ts)
 			log.WithFields(log.Fields{
@@ -83,6 +85,21 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				"accountAge": age,
 				"regexp":     re.String(),
 			}).Info("Message deleted")
+			dm, err := s.UserChannelCreate(m.Author.ID)
+			if err != nil {
+				log.WithError(err).Error("Could not create DM with user: %s", m.Author.ID)
+				continue
+			}
+			guild, err := s.Guild(m.GuildID)
+			if err != nil {
+				log.WithError(err).Error("Could not get guild by ID: %s", guild.ID)
+				continue
+			}
+			deletionMsg := "You have sent a message in server %s which has been deleted due to the server's denylist policies. " +
+				"Your message contained the disallowed term %s"
+			if _, err = s.ChannelMessageSend(dm.ID, fmt.Sprintf(deletionMsg, guild.Name, re.String())); err != nil {
+				log.WithError(err).Error("Could not send message to server")
+			}
 		}
 	}
 }
