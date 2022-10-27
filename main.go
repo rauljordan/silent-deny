@@ -68,25 +68,34 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	for _, re := range denylist {
 		if re.MatchString(m.Content) {
-			if err := s.ChannelMessageDelete(m.ChannelID, m.ID); err != nil {
-				log.WithError(err).Error("Failed to delete denied message.")
+			// Only filter "gm" if outside the gm channel.
+			if strings.Contains(re.String(), "gm") && m.ChannelID == "859518192282763325" {
 				continue
 			}
-			ts, err := discordgo.SnowflakeTimestamp(m.Author.ID)
-			if err != nil {
-				log.WithError(err).Error("Could not determine user's timestamp")
-				continue
+			if err := deleteMessage(s, m, re); err != nil {
+				log.WithError(err).Error("Could not delete message")
 			}
-			age := time.Since(ts)
-			log.WithFields(log.Fields{
-				"username":   m.Author.Username,
-				"id":         m.Author.ID,
-				"content":    m.Content,
-				"accountAge": age,
-				"regexp":     re.String(),
-			}).Info("Message deleted")
 		}
 	}
+}
+
+func deleteMessage(s *discordgo.Session, m *discordgo.MessageCreate, re *regexp.Regexp) error {
+	if err := s.ChannelMessageDelete(m.ChannelID, m.ID); err != nil {
+		return err
+	}
+	ts, err := discordgo.SnowflakeTimestamp(m.Author.ID)
+	if err != nil {
+		return err
+	}
+	age := time.Since(ts)
+	log.WithFields(log.Fields{
+		"username":   m.Author.Username,
+		"id":         m.Author.ID,
+		"content":    m.Content,
+		"accountAge": age,
+		"regexp":     re.String(),
+	}).Info("Message deleted")
+	return nil
 }
 
 func monitorDenylistFile(ctx context.Context, fp string) {
