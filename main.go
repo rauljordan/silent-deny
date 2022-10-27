@@ -34,7 +34,7 @@ func main() {
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + Token)
 	if err != nil {
-		fmt.Println("error creating Discord session,", err)
+		log.WithError(err).Fatal("Error creating Discord session")
 		return
 	}
 	// Register the messageCreate func as a callback for MessageCreate events.
@@ -44,22 +44,19 @@ func main() {
 	go monitorDenylistFile(ctx, DenylistPath)
 
 	// Open a websocket connection to Discord and begin listening.
-	err = dg.Open()
-	if err != nil {
-		fmt.Println("error opening connection,", err)
+	if err = dg.Open(); err != nil {
+		log.WithError(err).Fatal("Error opening websocket")
 		return
 	}
-	defer func() {
-		if err := dg.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
 
 	// Wait here until CTRL-C or other term signal is received.
 	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM)
 	<-sc
+	if err := dg.Close(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // This function will be called (due to AddHandler above) every time a new
