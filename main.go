@@ -72,9 +72,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			if strings.Contains(re.String(), "gm") && m.ChannelID == "859518192282763325" {
 				continue
 			}
-			if strings.Contains(re.String(), "faucet") && m.ChannelID != "961349868612386856" {
-				continue
-			}
 			addrRegex := regexp.MustCompile("^0x[a-fA-F0-9]{40}$")
 			isFaucetChannel := m.ChannelID == "765654444825641001" || m.ChannelID == "961349868612386856"
 			if !(addrRegex.MatchString(m.Content) && isFaucetChannel) {
