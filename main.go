@@ -68,6 +68,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	for _, re := range denylist {
 		if re.MatchString(m.Content) {
+			// Allow longer messages
+			if len(m.Content) > 60 {
+				continue
+			}
 			// Only filter "gm" if outside the gm channel.
 			if strings.Contains(re.String(), "gm") && m.ChannelID == "859518192282763325" {
 				continue
