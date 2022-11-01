@@ -74,8 +74,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			addrRegex := regexp.MustCompile("^0x[a-fA-F0-9]{40}$")
 			isFaucetChannel := m.ChannelID == "765654444825641001" || m.ChannelID == "961349868612386856"
-			if !(addrRegex.MatchString(m.Content) && isFaucetChannel) {
-				continue
+			if addrRegex.MatchString(m.Content) {
+				if !isFaucetChannel {
+					continue
+				}
 			}
 			if err := deleteMessage(s, m, re); err != nil {
 				log.WithError(err).Error("Could not delete message")
